@@ -245,9 +245,6 @@
 				/>
 			</div>
 		</div>
-		<p class="mt-2 text-sm text-gray-500">
-			💡 Use this if you have a specific shaft not in our database
-		</p>
 	</div>
 
 	<!-- Educational Content -->
