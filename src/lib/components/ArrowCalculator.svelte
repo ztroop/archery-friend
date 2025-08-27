@@ -195,7 +195,7 @@
 		{:else if activeTab === 'point-weight'}
 			<PointWeightRecommendations bind:config={currentConfig} />
 		{:else if activeTab === 'safety'}
-			<SafetyValidator {currentConfig} {validateSetup} />
+			<SafetyValidator {currentConfig} {validateSetup} {totalWeight} {gpp} {arrowLength} {foc} />
 		{:else if activeTab === 'configs'}
 			<ConfigurationManager
 				{configurations}

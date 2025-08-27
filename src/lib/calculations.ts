@@ -93,14 +93,30 @@ export function calculateFOC(
 	pointWeight: number,
 	totalWeight: number
 ): number {
-	const balancePoint = arrowLength / 2;
-	const frontWeight = pointWeight;
+	// FOC calculation: ((Balance Point - Geometric Center) / Arrow Length) * 100
+	// Balance point is calculated using the moment balance equation
 
-	// Simplified FOC calculation
-	const actualBalancePoint = (frontWeight * arrowLength) / totalWeight;
-	const foc = ((actualBalancePoint - balancePoint) / arrowLength) * 100;
+	// For an arrow, we need to consider the distribution of weight:
+	// - Point weight is concentrated at the front tip (position 0)
+	// - Shaft weight is distributed evenly along the shaft
+	// - Nock and fletching weight is concentrated at the back (position = arrowLength)
 
-	return Math.max(0, foc);
+	// Calculate the balance point using moments
+	// Moment = weight * distance from reference point (back of arrow)
+	const shaftWeight = totalWeight - pointWeight; // This includes nock and fletching
+
+	// Assuming shaft weight is evenly distributed, its center of mass is at arrowLength/2
+	// Point weight is at the front tip, distance from back = arrowLength
+	const totalMoment = pointWeight * arrowLength + shaftWeight * (arrowLength / 2);
+	const balancePoint = totalMoment / totalWeight;
+
+	// Geometric center of the arrow
+	const geometricCenter = arrowLength / 2;
+
+	// FOC percentage
+	const foc = ((balancePoint - geometricCenter) / arrowLength) * 100;
+
+	return foc;
 }
 
 /**
@@ -128,7 +144,13 @@ export function calculateOptimalPointWeight(
 export function performSafetyCheck(config: ArrowConfiguration): SafetyCheck {
 	const gppCheck = checkGPP(config.gpp);
 	const lengthCheck = checkArrowLength(config.drawLength, config.arrowLength);
-	const spineCheck = checkSpine(config.drawWeight, config.drawLength, config.spineValue);
+	const spineCheck = checkSpine(
+		config.drawWeight,
+		config.drawLength,
+		config.spineValue,
+		config.pointWeight,
+		config.arrowMaterial
+	);
 
 	let overall: 'safe' | 'warning' | 'danger' = 'safe';
 
@@ -208,25 +230,43 @@ function checkArrowLength(drawLength: number, arrowLength: number) {
 	}
 }
 
-function checkSpine(drawWeight: number, drawLength: number, spineValue: number) {
-	// Rough spine check - this is simplified
-	const estimatedOptimalSpine = drawWeight * 0.9 + (drawLength - 28) * 10;
-	const difference = Math.abs(spineValue - estimatedOptimalSpine);
+function checkSpine(
+	drawWeight: number,
+	drawLength: number,
+	spineValue: number,
+	pointWeight: number,
+	arrowMaterial: ArrowMaterial
+) {
+	// Use the proper spine recommendation calculation
+	const spineRecommendation = calculateSpineRecommendation(
+		drawWeight,
+		drawLength,
+		pointWeight,
+		arrowMaterial
+	);
 
-	if (difference > 100) {
-		return {
-			status: 'danger' as const,
-			message: 'Spine appears significantly mismatched - poor accuracy expected.'
-		};
-	} else if (difference > 50) {
-		return {
-			status: 'warning' as const,
-			message: 'Spine may not be optimal - consider tuning or different spine.'
-		};
+	if (spineValue < spineRecommendation.minSpine || spineValue > spineRecommendation.maxSpine) {
+		// Spine is outside the acceptable range
+		const difference = Math.min(
+			Math.abs(spineValue - spineRecommendation.minSpine),
+			Math.abs(spineValue - spineRecommendation.maxSpine)
+		);
+
+		if (difference > 100) {
+			return {
+				status: 'danger' as const,
+				message: 'Spine is significantly outside recommended range - poor accuracy expected.'
+			};
+		} else {
+			return {
+				status: 'warning' as const,
+				message: 'Spine is outside optimal range - consider tuning or different spine.'
+			};
+		}
 	} else {
 		return {
 			status: 'safe' as const,
-			message: 'Spine appears well-matched to your setup.'
+			message: 'Spine is within the recommended range for your setup.'
 		};
 	}
 }

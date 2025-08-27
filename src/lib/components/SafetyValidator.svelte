@@ -3,6 +3,10 @@
 
 	export let currentConfig: Partial<ArrowConfiguration>;
 	export let validateSetup: () => SafetyCheck | null;
+	export let totalWeight: number;
+	export let gpp: number;
+	export let arrowLength: number;
+	export let foc: number;
 
 	$: safetyCheck = validateSetup();
 
@@ -37,8 +41,9 @@
 			currentConfig.nockWeight &&
 			currentConfig.fletchingWeight &&
 			currentConfig.spineValue &&
-			currentConfig.totalWeight &&
-			currentConfig.gpp
+			totalWeight &&
+			gpp &&
+			arrowLength
 		);
 	}
 </script>
@@ -75,8 +80,8 @@
 					<li class={currentConfig.spineValue ? 'text-green-600' : ''}>
 						{currentConfig.spineValue ? '✓' : '○'} Arrow Spine
 					</li>
-					<li class={currentConfig.totalWeight ? 'text-green-600' : ''}>
-						{currentConfig.totalWeight ? '✓' : '○'} Total Arrow Weight
+					<li class={totalWeight ? 'text-green-600' : ''}>
+						{totalWeight ? '✓' : '○'} Total Arrow Weight
 					</li>
 				</ul>
 			</div>
@@ -162,7 +167,7 @@
 						<span>Arrow Length Safety</span>
 					</h4>
 					<span class="text-xl font-bold">
-						{currentConfig.arrowLength?.toFixed(2)}"
+						{arrowLength?.toFixed(2)}"
 					</span>
 				</div>
 				<p class="text-sm">{safetyCheck.arrowLength.message}</p>
@@ -174,11 +179,11 @@
 					>
 						<h5 class="mb-1 font-medium text-gray-700">Safety Guidelines:</h5>
 						<ul class="space-y-1 text-sm text-gray-600">
-							{#if (currentConfig.arrowLength || 0) - (currentConfig.drawLength || 0) < 0.5}
+							{#if (arrowLength || 0) - (currentConfig.drawLength || 0) < 0.5}
 								<li>• DO NOT SHOOT - Arrow is too short</li>
 								<li>• Risk of overdraw and serious injury</li>
 								<li>• Get properly sized arrows immediately</li>
-							{:else if (currentConfig.arrowLength || 0) - (currentConfig.drawLength || 0) < 1}
+							{:else if (arrowLength || 0) - (currentConfig.drawLength || 0) < 1}
 								<li>• Maintain consistent anchor point</li>
 								<li>• Avoid drawing past your measured draw length</li>
 								<li>• Consider adding 0.5" for safety margin</li>
@@ -234,11 +239,11 @@
 				</div>
 				<div class="rounded bg-white p-3 text-center">
 					<div class="font-medium text-gray-700">Arrow Length</div>
-					<div class="text-lg text-purple-600">{currentConfig.arrowLength?.toFixed(2)}"</div>
+					<div class="text-lg text-purple-600">{arrowLength?.toFixed(2)}"</div>
 				</div>
 				<div class="rounded bg-white p-3 text-center">
 					<div class="font-medium text-gray-700">Total Weight</div>
-					<div class="text-lg text-red-600">{currentConfig.totalWeight?.toFixed(0)}gr</div>
+					<div class="text-lg text-red-600">{totalWeight?.toFixed(0)}gr</div>
 				</div>
 				<div class="rounded bg-white p-3 text-center">
 					<div class="font-medium text-gray-700">Point Weight</div>
@@ -250,11 +255,11 @@
 				</div>
 				<div class="rounded bg-white p-3 text-center">
 					<div class="font-medium text-gray-700">GPP</div>
-					<div class="text-lg text-teal-600">{currentConfig.gpp?.toFixed(2)}</div>
+					<div class="text-lg text-teal-600">{gpp?.toFixed(2)}</div>
 				</div>
 				<div class="rounded bg-white p-3 text-center">
 					<div class="font-medium text-gray-700">FOC</div>
-					<div class="text-lg text-pink-600">{currentConfig.foc?.toFixed(1)}%</div>
+					<div class="text-lg text-pink-600">{foc?.toFixed(1)}%</div>
 				</div>
 			</div>
 		</div>
