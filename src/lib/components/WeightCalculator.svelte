@@ -1,20 +1,15 @@
 <script lang="ts">
 	import type { ArrowConfiguration } from '../types';
 	import { componentDatabase } from '../data';
-	import { calculateTotalWeight, calculateFOC } from '../calculations';
 
 	export let config: Partial<ArrowConfiguration>;
 	export let arrowLength: number;
 	export let totalWeight: number;
 	export let foc: number;
 
-	let customPoint = { name: 'Custom Point', weight: 125 };
-	let customNock = { name: 'Custom Nock', weight: 8 };
-	let customFletching = { name: 'Custom Fletching', weight: 21 };
-
-	$: pointComponents = componentDatabase.filter((c) => c.category === 'point');
-	$: nockComponents = componentDatabase.filter((c) => c.category === 'nock');
-	$: fletchingComponents = componentDatabase.filter((c) => c.category === 'fletching');
+	const pointComponents = componentDatabase.filter((c) => c.category === 'point');
+	const nockComponents = componentDatabase.filter((c) => c.category === 'nock');
+	const fletchingComponents = componentDatabase.filter((c) => c.category === 'fletching');
 
 	function selectComponent(component: (typeof componentDatabase)[0]) {
 		if (component.category === 'point') {
@@ -50,13 +45,13 @@
 		};
 	}
 
-	$: weightDistribution = getWeightDistribution();
+	$: weightDistribution = totalWeight && config ? getWeightDistribution() : null;
 </script>
 
 <div class="space-y-6">
 	<div class="text-center">
 		<h2 class="mb-2 text-2xl font-bold text-gray-800">⚖️ Total Arrow Weight Calculator</h2>
-		<p class="text-gray-600">Calculate total arrow weight and FOC with our component database</p>
+		<p class="text-gray-600">Calculate total arrow weight and FOC (Front of Center)</p>
 	</div>
 
 	<!-- Shaft Weight Input -->
@@ -102,7 +97,7 @@
 	<div class="rounded-lg bg-red-50 p-6">
 		<h3 class="mb-4 text-lg font-medium text-gray-700">🔺 Point/Tip Selection</h3>
 		<div class="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-			{#each pointComponents as component}
+			{#each pointComponents as component (component.name)}
 				<button
 					class="rounded-lg border p-3 text-sm transition-all
 						{config.pointWeight === component.weight
@@ -138,7 +133,7 @@
 	<div class="rounded-lg bg-green-50 p-6">
 		<h3 class="mb-4 text-lg font-medium text-gray-700">🎯 Nock Selection</h3>
 		<div class="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-			{#each nockComponents as component}
+			{#each nockComponents as component (component.name)}
 				<button
 					class="rounded-lg border p-3 text-sm transition-all
 						{config.nockWeight === component.weight
@@ -174,7 +169,7 @@
 	<div class="rounded-lg bg-purple-50 p-6">
 		<h3 class="mb-4 text-lg font-medium text-gray-700">🪶 Fletching Selection</h3>
 		<div class="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-			{#each fletchingComponents as component}
+			{#each fletchingComponents as component (component.name)}
 				<button
 					class="rounded-lg border p-3 text-sm transition-all
 						{config.fletchingWeight === component.weight

@@ -95,7 +95,6 @@ export function calculateFOC(
 ): number {
 	const balancePoint = arrowLength / 2;
 	const frontWeight = pointWeight;
-	const rearWeight = totalWeight - pointWeight;
 
 	// Simplified FOC calculation
 	const actualBalancePoint = (frontWeight * arrowLength) / totalWeight;

@@ -114,7 +114,7 @@
 	<div class="rounded-lg bg-gray-50 p-6">
 		<h3 class="mb-4 text-lg font-medium text-gray-700">Arrow Material</h3>
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-			{#each materials as material}
+			{#each materials as material (material.value)}
 				<label class="relative">
 					<input
 						type="radio"
@@ -168,7 +168,7 @@
 				<div class="rounded-lg bg-white p-4">
 					<h4 class="mb-2 font-medium text-gray-700">📝 Setup Notes</h4>
 					<ul class="space-y-1 text-sm text-gray-600">
-						{#each spineRecommendation.notes as note}
+						{#each spineRecommendation.notes as note, i (i)}
 							<li>• {note}</li>
 						{/each}
 					</ul>
@@ -182,7 +182,7 @@
 		<div class="rounded-lg border bg-white p-6">
 			<h3 class="mb-4 text-lg font-medium text-gray-700">🏹 Recommended Shafts</h3>
 			<div class="space-y-3">
-				{#each filteredShafts as shaft}
+				{#each filteredShafts as shaft (shaft.name)}
 					<div
 						class="cursor-pointer rounded-lg border p-4 transition-all hover:bg-gray-50
 						{config.spineValue === shaft.spine && config.shaftWeight === shaft.weight

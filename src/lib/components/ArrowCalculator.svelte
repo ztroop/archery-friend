@@ -3,14 +3,11 @@
 	import type { ArrowConfiguration } from '../types';
 	import {
 		calculateArrowLength,
-		calculateSpineRecommendation,
 		calculateTotalWeight,
 		calculateGPP,
 		calculateFOC,
-		calculateOptimalPointWeight,
 		performSafetyCheck
 	} from '../calculations';
-	import { shaftDatabase, componentDatabase, overhangOptions } from '../data';
 	import {
 		loadConfigurations,
 		saveConfigurations,
@@ -157,7 +154,7 @@
 	<!-- Tab Navigation -->
 	<div class="mb-6 rounded-lg bg-white p-1 shadow-sm">
 		<nav class="flex space-x-1 overflow-x-auto">
-			{#each tabs as tab}
+			{#each tabs as tab (tab.id)}
 				<button
 					class="flex items-center space-x-2 rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors
 						{activeTab === tab.id

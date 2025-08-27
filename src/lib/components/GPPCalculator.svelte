@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { ArrowConfiguration } from '../types';
-	import { calculateGPP } from '../calculations';
 
 	export let config: Partial<ArrowConfiguration>;
 	export let totalWeight: number;
@@ -224,7 +223,7 @@
 		>
 			<h3 class="mb-4 text-lg font-medium text-gray-700">📋 Recommendations</h3>
 			<ul class="space-y-2">
-				{#each recommendations as rec}
+				{#each recommendations as rec, i (i)}
 					<li class="flex items-start space-x-2">
 						<span
 							class="mt-0.5 text-sm

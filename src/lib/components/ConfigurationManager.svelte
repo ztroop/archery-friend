@@ -89,7 +89,7 @@
 				} else {
 					alert('Invalid configuration file');
 				}
-			} catch (error) {
+			} catch {
 				alert('Error reading configuration file');
 			}
 		};
@@ -209,7 +209,7 @@
 
 		{#if configurations.length > 0}
 			<div class="divide-y">
-				{#each configurations as config}
+				{#each configurations as config (config.id)}
 					<div class="p-6 transition-colors hover:bg-gray-50">
 						<div class="mb-3 flex items-center justify-between">
 							<div>

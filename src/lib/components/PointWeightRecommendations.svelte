@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { ArrowConfiguration } from '../types';
-	import { calculateOptimalPointWeight, calculateSpineRecommendation } from '../calculations';
+	import { calculateOptimalPointWeight } from '../calculations';
 
 	export let config: Partial<ArrowConfiguration>;
 
@@ -93,7 +93,8 @@
 		return baseRecommendations;
 	}
 
-	$: recommendations = getPointWeightRecommendations();
+	$: recommendations =
+		config.drawWeight && config.drawLength && shootingStyle ? getPointWeightRecommendations() : [];
 
 	function calculateBroadheadMatch() {
 		if (!config.pointWeight || !broadheadWeight) return null;
@@ -113,7 +114,7 @@
 		return { difference, status, message };
 	}
 
-	$: broadheadMatch = calculateBroadheadMatch();
+	$: broadheadMatch = config.pointWeight && broadheadWeight ? calculateBroadheadMatch() : null;
 
 	function getTrajectoryComparison() {
 		if (!config.pointWeight) return [];
@@ -133,7 +134,7 @@
 		});
 	}
 
-	$: trajectoryComparison = getTrajectoryComparison();
+	$: trajectoryComparison = config.pointWeight ? getTrajectoryComparison() : [];
 </script>
 
 <div class="space-y-6">
@@ -247,7 +248,7 @@
 		<div class="rounded-lg border bg-white p-6">
 			<h3 class="mb-4 text-lg font-medium text-gray-700">💡 Recommended Weights</h3>
 			<div class="space-y-4">
-				{#each recommendations as rec}
+				{#each recommendations as rec (rec.weight)}
 					<div
 						class="cursor-pointer rounded-lg border p-4 hover:bg-gray-50"
 						on:click={() => (config.pointWeight = rec.weight)}
@@ -269,7 +270,7 @@
 							<div>
 								<span class="font-medium text-green-600">Pros:</span>
 								<ul class="ml-2 text-gray-600">
-									{#each rec.pros as pro}
+									{#each rec.pros as pro, i (i)}
 										<li>• {pro}</li>
 									{/each}
 								</ul>
@@ -277,7 +278,7 @@
 							<div>
 								<span class="font-medium text-orange-600">Cons:</span>
 								<ul class="ml-2 text-gray-600">
-									{#each rec.cons as con}
+									{#each rec.cons as con, i (i)}
 										<li>• {con}</li>
 									{/each}
 								</ul>
@@ -371,7 +372,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each trajectoryComparison as traj}
+						{#each trajectoryComparison as traj (traj.weight)}
 							<tr class="border-b {traj.isSelected ? 'bg-purple-100' : ''}">
 								<td class="p-2 font-medium">{traj.weight}gr</td>
 								<td class="p-2">{traj.relativeSpeed}%</td>

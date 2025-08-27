@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { ArrowConfiguration } from '../types';
 	import { overhangOptions } from '../data';
-	import { calculateArrowLength } from '../calculations';
 
 	export let config: Partial<ArrowConfiguration>;
 	export let arrowLength: number;
@@ -43,7 +42,7 @@
 	<div class="rounded-lg bg-green-50 p-6">
 		<h3 class="mb-4 text-lg font-medium text-gray-700">Safety Overhang Options</h3>
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			{#each overhangOptions as option}
+			{#each overhangOptions as option (option.value)}
 				<label class="relative">
 					<input type="radio" bind:group={config.overhang} value={option.value} class="sr-only" />
 					<div
