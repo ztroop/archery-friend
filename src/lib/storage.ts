@@ -51,7 +51,7 @@ export function createDefaultConfiguration(): Partial<ArrowConfiguration> {
 		nockWeight: 8,
 		fletchingWeight: 21,
 		arrowMaterial: 'carbon',
-		spineValue: 400,
+		spineValue: 200,
 		shaftWeight: 8.5
 	};
 }

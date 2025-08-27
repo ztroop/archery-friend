@@ -60,6 +60,14 @@
 			? calculateFOC(arrowLength, currentConfig.pointWeight, totalWeight)
 			: 0;
 
+	// Update currentConfig with calculated values in real-time
+	$: {
+		if (arrowLength) currentConfig.arrowLength = arrowLength;
+		if (totalWeight) currentConfig.totalWeight = totalWeight;
+		if (gpp) currentConfig.gpp = gpp;
+		if (foc) currentConfig.foc = foc;
+	}
+
 	// Navigation tabs
 	const tabs = [
 		{ id: 'arrow-length', label: 'Arrow Length', icon: '📏' },

@@ -34,12 +34,35 @@
 		showDeleteConfirm = '';
 	}
 
-	function formatDate(timestamp: number): string {
-		return new Date(parseInt(timestamp.toString().slice(0, 13))).toLocaleDateString();
+	function formatDate(id: string): string {
+		try {
+			// The ID format is: Date.now().toString(36) + Math.random().toString(36).substr(2)
+			// The timestamp part is typically 8-9 characters in base-36
+			// Let's try different lengths to find the valid timestamp
+			for (let len = 8; len <= 10; len++) {
+				const timestampPart = id.substring(0, len);
+				const timestamp = parseInt(timestampPart, 36);
+
+				// Check if this looks like a valid timestamp (after year 2020, before year 2050)
+				if (timestamp > 1577836800000 && timestamp < 2524608000000) {
+					const date = new Date(timestamp);
+					if (!isNaN(date.getTime())) {
+						return date.toLocaleDateString();
+					}
+				}
+			}
+
+			// Fallback: if we can't parse the timestamp, return a generic message
+			return 'Recently saved';
+		} catch (error) {
+			console.log(error);
+			return 'Recently saved';
+		}
 	}
 
 	function getSetupCompleteness(config: Partial<ArrowConfiguration>): number {
-		const requiredFields = [
+		// Required input fields (calculated fields like totalWeight, gpp, foc are derived from these)
+		const requiredInputFields = [
 			'drawLength',
 			'drawWeight',
 			'pointWeight',
@@ -47,14 +70,15 @@
 			'nockWeight',
 			'fletchingWeight',
 			'spineValue',
-			'totalWeight'
+			'overhang'
 		];
-		const completedFields = requiredFields.filter(
+		const completedInputFields = requiredInputFields.filter(
 			(field) =>
 				config[field as keyof ArrowConfiguration] !== undefined &&
-				config[field as keyof ArrowConfiguration] !== null
+				config[field as keyof ArrowConfiguration] !== null &&
+				config[field as keyof ArrowConfiguration] !== 0
 		);
-		return Math.round((completedFields.length / requiredFields.length) * 100);
+		return Math.round((completedInputFields.length / requiredInputFields.length) * 100);
 	}
 
 	function canSave(): boolean {
@@ -146,8 +170,8 @@
 			</div>
 		</div>
 
-		<!-- Save Button -->
-		<div class="flex space-x-3">
+		<!-- Action Buttons -->
+		<div class="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-3">
 			<button
 				class="flex-1 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
 				disabled={!canSave()}
@@ -156,24 +180,13 @@
 				💾 Save Current Setup
 			</button>
 
-			{#if !canSave()}
-				<div class="flex-1 py-2 text-center text-sm text-gray-500">
-					Complete more fields to save
-				</div>
-			{/if}
-		</div>
-	</div>
-
-	<!-- Import/Export -->
-	<div class="rounded-lg bg-gray-50 p-6">
-		<h3 class="mb-4 text-lg font-medium text-gray-700">📁 Import/Export</h3>
-		<div class="flex space-x-3">
 			<label
 				class="flex-1 cursor-pointer rounded-lg bg-green-600 px-4 py-2 text-center font-medium text-white transition-colors hover:bg-green-700"
 			>
 				📥 Import Configuration
 				<input type="file" accept=".json" class="hidden" on:change={importConfiguration} />
 			</label>
+
 			<button
 				class="flex-1 rounded-lg bg-purple-600 px-4 py-2 font-medium text-white transition-colors hover:bg-purple-700 disabled:bg-gray-400"
 				disabled={configurations.length === 0}
@@ -194,27 +207,31 @@
 				📤 Export All
 			</button>
 		</div>
+
+		{#if !canSave()}
+			<div class="mt-3 text-center text-sm text-gray-500">Complete more fields to save</div>
+		{/if}
 	</div>
 
 	<!-- Saved Configurations -->
-	<div class="rounded-lg border bg-white">
-		<div class="border-b p-6">
+	<div class="rounded-lg border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
+		<div class="border-b border-purple-200 p-6">
 			<h3 class="text-lg font-medium text-gray-800">📚 Saved Configurations</h3>
 			{#if configurations.length === 0}
-				<p class="mt-2 text-sm text-gray-500">
+				<p class="mt-2 text-sm text-gray-600">
 					No saved configurations yet. Complete and save your first setup above.
 				</p>
 			{/if}
 		</div>
 
 		{#if configurations.length > 0}
-			<div class="divide-y">
+			<div class="divide-y divide-purple-200">
 				{#each configurations as config (config.id)}
-					<div class="p-6 transition-colors hover:bg-gray-50">
+					<div class="p-6 transition-colors hover:bg-white/50 hover:shadow-sm">
 						<div class="mb-3 flex items-center justify-between">
 							<div>
 								<h4 class="text-lg font-medium text-gray-800">{config.name}</h4>
-								<p class="text-sm text-gray-500">Saved {formatDate(parseInt(config.id))}</p>
+								<p class="text-sm text-gray-500">Saved {formatDate(config.id)}</p>
 							</div>
 							<div class="flex space-x-2">
 								<button
@@ -240,27 +257,27 @@
 
 						<!-- Configuration Preview -->
 						<div class="grid grid-cols-2 gap-3 text-xs md:grid-cols-6">
-							<div class="rounded bg-gray-50 p-2 text-center">
+							<div class="rounded-lg bg-white/80 p-3 text-center shadow-sm">
 								<div class="text-gray-500">Draw</div>
 								<div class="font-medium">{config.drawLength}"@{config.drawWeight}#</div>
 							</div>
-							<div class="rounded bg-gray-50 p-2 text-center">
+							<div class="rounded-lg bg-white/80 p-3 text-center shadow-sm">
 								<div class="text-gray-500">Arrow</div>
 								<div class="font-medium">{config.arrowLength?.toFixed(1)}"</div>
 							</div>
-							<div class="rounded bg-gray-50 p-2 text-center">
+							<div class="rounded-lg bg-white/80 p-3 text-center shadow-sm">
 								<div class="text-gray-500">Spine</div>
 								<div class="font-medium">{config.spineValue}</div>
 							</div>
-							<div class="rounded bg-gray-50 p-2 text-center">
+							<div class="rounded-lg bg-white/80 p-3 text-center shadow-sm">
 								<div class="text-gray-500">Weight</div>
 								<div class="font-medium">{config.totalWeight?.toFixed(0)}gr</div>
 							</div>
-							<div class="rounded bg-gray-50 p-2 text-center">
+							<div class="rounded-lg bg-white/80 p-3 text-center shadow-sm">
 								<div class="text-gray-500">GPP</div>
 								<div class="font-medium">{config.gpp?.toFixed(1)}</div>
 							</div>
-							<div class="rounded bg-gray-50 p-2 text-center">
+							<div class="rounded-lg bg-white/80 p-3 text-center shadow-sm">
 								<div class="text-gray-500">FOC</div>
 								<div class="font-medium">{config.foc?.toFixed(1)}%</div>
 							</div>
