@@ -291,7 +291,7 @@
 
 <!-- Save Dialog -->
 {#if showSaveDialog}
-	<div class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
 		<div class="mx-4 w-full max-w-md rounded-lg bg-white p-6">
 			<h3 class="mb-4 text-lg font-medium text-gray-800">💾 Save Configuration</h3>
 			<div class="mb-4">
@@ -329,7 +329,7 @@
 
 <!-- Delete Confirmation -->
 {#if showDeleteConfirm}
-	<div class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
 		<div class="mx-4 w-full max-w-md rounded-lg bg-white p-6">
 			<h3 class="mb-4 text-lg font-medium text-gray-800">🗑️ Delete Configuration</h3>
 			<p class="mb-4 text-gray-600">
