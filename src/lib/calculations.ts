@@ -1,5 +1,10 @@
 import type { ArrowConfiguration, SpineRecommendation, SafetyCheck, ArrowMaterial } from './types';
-import { spineConstants, manufacturerSpineRecommendations, pointWeightAdjustments } from './data';
+import {
+	spineConstants,
+	manufacturerSpineRecommendations,
+	pointWeightAdjustments,
+	shaftDatabase
+} from './data';
 
 /**
  * Calculate recommended arrow length based on draw length and overhang
@@ -282,7 +287,9 @@ export function performSafetyCheck(config: ArrowConfiguration): SafetyCheck {
 		config.drawLength,
 		config.spineValue,
 		config.pointWeight,
-		config.arrowMaterial
+		config.arrowMaterial,
+		config.shaftName,
+		config.shaftWeight
 	);
 
 	let overall: 'safe' | 'warning' | 'danger' = 'safe';
@@ -363,12 +370,45 @@ function checkArrowLength(drawLength: number, arrowLength: number) {
 	}
 }
 
+function findShaftBySpecs(
+	spineValue: number,
+	shaftWeight: number,
+	arrowMaterial: ArrowMaterial
+): string | null {
+	const matchingShaft = shaftDatabase.find(
+		(shaft) =>
+			shaft.spine === spineValue && shaft.weight === shaftWeight && shaft.material === arrowMaterial
+	);
+
+	return matchingShaft ? matchingShaft.name : null;
+}
+
+function isFromKnownManufacturer(shaftName: string): boolean {
+	const knownManufacturers = [
+		'Black Eagle',
+		'Easton',
+		'Carbon Express',
+		'Gold Tip',
+		'Victory',
+		'Beman',
+		'PSE',
+		'Bloodsport',
+		'Maxima'
+	];
+
+	return knownManufacturers.some((manufacturer) =>
+		shaftName.toLowerCase().includes(manufacturer.toLowerCase())
+	);
+}
+
 function checkSpine(
 	drawWeight: number,
 	drawLength: number,
 	spineValue: number,
 	pointWeight: number,
-	arrowMaterial: ArrowMaterial
+	arrowMaterial: ArrowMaterial,
+	shaftName?: string,
+	shaftWeight?: number
 ) {
 	// Use the proper spine recommendation calculation
 	const spineRecommendation = calculateSpineRecommendation(
@@ -378,6 +418,25 @@ function checkSpine(
 		arrowMaterial
 	);
 
+	// Check if this spine value matches any manufacturer recommendations
+	const manufacturerRecommendations = getManufacturerSpineRecommendations(
+		drawWeight,
+		pointWeight,
+		drawLength
+	);
+
+	const isManufacturerRecommended = manufacturerRecommendations.some(
+		(rec) => rec.recommendedSpine === spineValue
+	);
+
+	// Check if the shaft is from a known manufacturer (even if not exact spine match)
+	// If no shaftName provided, try to look it up by specs
+	const effectiveShaftName =
+		shaftName || (shaftWeight ? findShaftBySpecs(spineValue, shaftWeight, arrowMaterial) : null);
+	const isManufacturerShaft = effectiveShaftName
+		? isFromKnownManufacturer(effectiveShaftName)
+		: false;
+
 	if (spineValue < spineRecommendation.minSpine || spineValue > spineRecommendation.maxSpine) {
 		// Spine is outside the acceptable range
 		const difference = Math.min(
@@ -386,14 +445,30 @@ function checkSpine(
 		);
 
 		if (difference > 100) {
+			let message = 'Spine is significantly outside recommended range - poor accuracy expected.';
+			if (isManufacturerRecommended) {
+				message +=
+					' However, this spine matches a manufacturer recommendation, so it may still work well with proper tuning.';
+			} else if (isManufacturerShaft) {
+				message +=
+					' This is a manufacturer shaft, so the spine may be acceptable for your setup despite being outside the general recommended range. Consider professional tuning.';
+			}
 			return {
 				status: 'danger' as const,
-				message: 'Spine is significantly outside recommended range - poor accuracy expected.'
+				message
 			};
 		} else {
+			let message = 'Spine is outside optimal range - consider tuning or different spine.';
+			if (isManufacturerRecommended) {
+				message +=
+					' This spine matches a manufacturer recommendation, so it should be acceptable with proper tuning.';
+			} else if (isManufacturerShaft) {
+				message +=
+					' This is a manufacturer shaft, so the spine difference may be acceptable with proper tuning and technique adjustments.';
+			}
 			return {
 				status: 'warning' as const,
-				message: 'Spine is outside optimal range - consider tuning or different spine.'
+				message
 			};
 		}
 	} else {

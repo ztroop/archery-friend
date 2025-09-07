@@ -51,7 +51,8 @@ export function createDefaultConfiguration(): Partial<ArrowConfiguration> {
 		nockWeight: 8,
 		fletchingWeight: 21,
 		arrowMaterial: 'carbon',
-		spineValue: 200,
-		shaftWeight: 8.5
+		spineValue: 340,
+		shaftWeight: 8.5,
+		shaftName: 'Easton 4MM Full Metal Jacket 340'
 	};
 }

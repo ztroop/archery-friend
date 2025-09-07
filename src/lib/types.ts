@@ -11,6 +11,7 @@ export interface ArrowConfiguration {
 	fletchingWeight: number;
 	arrowMaterial: ArrowMaterial;
 	spineValue: number;
+	shaftName?: string; // Optional shaft name for manufacturer detection
 	totalWeight: number;
 	gpp: number;
 	foc: number;

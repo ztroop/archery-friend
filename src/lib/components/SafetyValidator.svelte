@@ -219,6 +219,17 @@
 							<li>• Adjust point weight to fine-tune dynamic spine</li>
 							<li>• Consider professional bow tuning</li>
 							<li>• Monitor arrow flight for erratic behavior</li>
+							{#if safetyCheck.spine.message.includes('manufacturer recommendation')}
+								<li class="text-blue-600">
+									• <strong>Note:</strong> This spine matches a manufacturer recommendation for your
+									setup
+								</li>
+							{:else if safetyCheck.spine.message.includes('manufacturer shaft')}
+								<li class="text-blue-600">
+									• <strong>Note:</strong> This is a manufacturer shaft - spine may be acceptable despite
+									being outside general recommendations
+								</li>
+							{/if}
 						</ul>
 					</div>
 				{/if}

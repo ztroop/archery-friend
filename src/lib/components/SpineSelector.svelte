@@ -50,6 +50,7 @@
 		config.spineValue = shaft.spine;
 		config.shaftWeight = shaft.weight;
 		config.arrowMaterial = shaft.material;
+		config.shaftName = shaft.name;
 	}
 
 	function isManufacturerRecommended(shaft: (typeof shaftDatabase)[0]): boolean {
