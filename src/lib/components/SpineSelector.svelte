@@ -1,12 +1,18 @@
 <script lang="ts">
 	import type { ArrowConfiguration, ArrowMaterial } from '../types';
-	import { calculateSpineRecommendation } from '../calculations';
+	import {
+		calculateSpineRecommendation,
+		getManufacturerSpineRecommendations
+	} from '../calculations';
 	import { shaftDatabase } from '../data';
 
 	export let config: Partial<ArrowConfiguration>;
 
 	let spineRecommendation: ReturnType<typeof calculateSpineRecommendation> | null = null;
+	let manufacturerRecommendations: ReturnType<typeof getManufacturerSpineRecommendations> = [];
 	let filteredShafts: typeof shaftDatabase = [];
+	let selectedManufacturer: string = 'all';
+	let showBrowsableOptions: boolean = false;
 
 	$: if (config.drawWeight && config.drawLength && config.pointWeight && config.arrowMaterial) {
 		spineRecommendation = calculateSpineRecommendation(
@@ -16,14 +22,26 @@
 			config.arrowMaterial
 		);
 
-		// Filter shafts by material and spine range
+		// Get manufacturer-specific recommendations
+		manufacturerRecommendations = getManufacturerSpineRecommendations(
+			config.drawWeight,
+			config.pointWeight,
+			config.arrowLength || 28
+		);
+
+		// Filter shafts by material and manufacturer (expanded spine range for browsing)
 		filteredShafts = shaftDatabase
 			.filter((shaft) => shaft.material === config.arrowMaterial)
 			.filter((shaft) => {
 				if (!spineRecommendation) return true;
-				return (
-					shaft.spine >= spineRecommendation.minSpine && shaft.spine <= spineRecommendation.maxSpine
-				);
+				// Expand the range significantly for browsing - show ±150 spine units instead of ±50
+				const expandedMinSpine = Math.max(200, spineRecommendation.recommended - 150);
+				const expandedMaxSpine = Math.min(900, spineRecommendation.recommended + 150);
+				return shaft.spine >= expandedMinSpine && shaft.spine <= expandedMaxSpine;
+			})
+			.filter((shaft) => {
+				if (selectedManufacturer === 'all') return true;
+				return shaft.name.toLowerCase().includes(selectedManufacturer.toLowerCase());
 			})
 			.sort((a, b) => a.spine - b.spine);
 	}
@@ -32,6 +50,29 @@
 		config.spineValue = shaft.spine;
 		config.shaftWeight = shaft.weight;
 		config.arrowMaterial = shaft.material;
+	}
+
+	function isManufacturerRecommended(shaft: (typeof shaftDatabase)[0]): boolean {
+		return manufacturerRecommendations.some(
+			(rec) =>
+				Math.abs(rec.recommendedSpine - shaft.spine) <= 25 &&
+				shaft.name.toLowerCase().includes(rec.manufacturer.toLowerCase())
+		);
+	}
+
+	function getManufacturerMatch(shaft: (typeof shaftDatabase)[0]) {
+		return manufacturerRecommendations.find(
+			(rec) =>
+				Math.abs(rec.recommendedSpine - shaft.spine) <= 25 &&
+				shaft.name.toLowerCase().includes(rec.manufacturer.toLowerCase())
+		);
+	}
+
+	function isInOptimalRange(shaft: (typeof shaftDatabase)[0]): boolean {
+		if (!spineRecommendation) return false;
+		return (
+			shaft.spine >= spineRecommendation.minSpine && shaft.spine <= spineRecommendation.maxSpine
+		);
 	}
 
 	const materials: { value: ArrowMaterial; label: string; description: string }[] = [
@@ -177,38 +218,217 @@
 		</div>
 	{/if}
 
-	<!-- Shaft Selection -->
+	<!-- Manufacturer-Specific Recommendations -->
+	{#if manufacturerRecommendations.length > 0}
+		<div class="rounded-lg bg-green-50 p-6">
+			<h3 class="mb-4 text-lg font-medium text-gray-700">🏭 Manufacturer Recommendations</h3>
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+				{#each manufacturerRecommendations as rec (rec.manufacturer + rec.series)}
+					<div
+						class="rounded-lg border bg-white p-4 {rec.confidence === 'high'
+							? 'border-green-300'
+							: rec.confidence === 'medium'
+								? 'border-yellow-300'
+								: 'border-gray-300'}"
+					>
+						<div class="mb-2 flex items-center justify-between">
+							<h4 class="font-semibold text-gray-800">{rec.manufacturer}</h4>
+							<span
+								class="rounded px-2 py-1 text-xs font-medium {rec.confidence === 'high'
+									? 'bg-green-100 text-green-800'
+									: rec.confidence === 'medium'
+										? 'bg-yellow-100 text-yellow-800'
+										: 'bg-gray-100 text-gray-800'}"
+							>
+								{rec.confidence}
+							</span>
+						</div>
+						<div class="mb-2 text-sm text-gray-600">{rec.series}</div>
+						<div class="mb-2 text-xl font-bold text-blue-600">{rec.recommendedSpine}</div>
+						{#if rec.notes.length > 0}
+							<div class="text-xs text-gray-500">
+								{#each rec.notes as note}
+									<div>• {note}</div>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				{/each}
+			</div>
+		</div>
+	{/if}
+
+	<!-- Enhanced Shaft Selection -->
 	{#if filteredShafts.length > 0}
 		<div class="rounded-lg border bg-white p-6">
-			<h3 class="mb-4 text-lg font-medium text-gray-700">🏹 Recommended Shafts</h3>
-			<div class="space-y-3">
-				{#each filteredShafts as shaft (shaft.name)}
+			<div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+				<div>
+					<h3 class="text-lg font-medium text-gray-700">🏹 Available Arrow Shafts</h3>
+					<p class="text-sm text-gray-500">Click any shaft to select it for your configuration</p>
+				</div>
+				<div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+					<div class="flex items-center gap-2">
+						<label for="manufacturerFilter" class="text-sm font-medium text-gray-600"
+							>Filter by:</label
+						>
+						<select
+							id="manufacturerFilter"
+							bind:value={selectedManufacturer}
+							class="rounded border border-gray-300 px-3 py-1 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+						>
+							<option value="all">All Manufacturers</option>
+							<option value="black eagle">Black Eagle</option>
+							<option value="easton">Easton</option>
+							<option value="carbon express">Carbon Express</option>
+							<option value="gold tip">Gold Tip</option>
+						</select>
+					</div>
+					<button
+						type="button"
+						on:click={() => (showBrowsableOptions = !showBrowsableOptions)}
+						class="rounded border px-3 py-1 text-sm transition-colors {showBrowsableOptions
+							? 'border-blue-500 bg-blue-50 text-blue-700'
+							: 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'}"
+					>
+						{showBrowsableOptions ? 'Hide' : 'Show'} All Options
+						{#if !showBrowsableOptions}
+							{@const browsableCount = filteredShafts.filter((shaft) => {
+								const isRecommended = isManufacturerRecommended(shaft);
+								const isInOptimal = isInOptimalRange(shaft);
+								const isSelected =
+									config.spineValue === shaft.spine && config.shaftWeight === shaft.weight;
+								return !isSelected && !isRecommended && !isInOptimal;
+							}).length}
+							{#if browsableCount > 0}
+								<span class="ml-1 rounded bg-gray-200 px-1.5 py-0.5 text-xs text-gray-700">
+									+{browsableCount}
+								</span>
+							{/if}
+						{/if}
+					</button>
+				</div>
+			</div>
+
+			<!-- Legend -->
+			<div class="mb-4 flex flex-wrap gap-4 text-xs">
+				<div class="flex items-center gap-1">
+					<div class="h-3 w-3 rounded border-2 border-green-400 bg-green-100"></div>
+					<span class="text-gray-600">Manufacturer Recommended</span>
+				</div>
+				<div class="flex items-center gap-1">
+					<div class="h-3 w-3 rounded border-2 border-blue-500 bg-blue-100"></div>
+					<span class="text-gray-600">Currently Selected</span>
+				</div>
+				<div class="flex items-center gap-1">
+					<div class="h-3 w-3 rounded border-2 border-orange-300 bg-orange-50"></div>
+					<span class="text-gray-600">In Optimal Range</span>
+				</div>
+				{#if showBrowsableOptions}
+					<div class="flex items-center gap-1">
+						<div class="h-3 w-3 rounded border-2 border-gray-200 bg-white"></div>
+						<span class="text-gray-600">Browsable Option</span>
+					</div>
+				{/if}
+			</div>
+
+			<div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+				{#each filteredShafts.filter((shaft) => {
+					const isRecommended = isManufacturerRecommended(shaft);
+					const isInOptimal = isInOptimalRange(shaft);
+					const isSelected = config.spineValue === shaft.spine && config.shaftWeight === shaft.weight;
+
+					// Always show selected, recommended, or optimal range shafts
+					if (isSelected || isRecommended || isInOptimal) return true;
+
+					// Only show browsable options if toggle is enabled
+					return showBrowsableOptions;
+				}) as shaft (shaft.name)}
+					{@const isRecommended = isManufacturerRecommended(shaft)}
+					{@const manufacturerMatch = getManufacturerMatch(shaft)}
+					{@const isInOptimal = isInOptimalRange(shaft)}
+					{@const isSelected =
+						config.spineValue === shaft.spine && config.shaftWeight === shaft.weight}
 					<div
-						class="cursor-pointer rounded-lg border p-4 transition-all hover:bg-gray-50
-						{config.spineValue === shaft.spine && config.shaftWeight === shaft.weight
-							? 'border-blue-500 bg-blue-50'
-							: 'border-gray-200'}"
+						class="cursor-pointer rounded-lg border p-4 transition-all hover:shadow-md
+						{isSelected
+							? 'border-blue-500 bg-blue-50 shadow-sm'
+							: isRecommended
+								? 'border-green-400 bg-green-50 hover:bg-green-100'
+								: isInOptimal
+									? 'border-orange-300 bg-orange-50 hover:bg-orange-100'
+									: 'border-gray-200 hover:bg-gray-50'}"
 						on:click={() => selectShaft(shaft)}
 						on:keydown={(e) => e.key === 'Enter' && selectShaft(shaft)}
 						role="button"
 						tabindex="0"
 					>
-						<div class="flex items-center justify-between">
-							<div>
-								<h4 class="font-medium text-gray-800">{shaft.name}</h4>
-								<div class="mt-1 text-sm text-gray-600">
-									<span class="mr-4 inline-block">Spine: {shaft.spine}</span>
-									<span class="mr-4 inline-block">Weight: {shaft.weight} gr/in</span>
-									<span class="inline-block">Diameter: {shaft.diameter}mm</span>
+						<div class="flex items-start justify-between">
+							<div class="flex-1">
+								<div class="flex items-center justify-between gap-2">
+									<h4 class="font-medium text-gray-800">{shaft.name}</h4>
+									{#if isRecommended}
+										<span class="rounded bg-green-200 px-2 py-1 text-xs font-medium text-green-800">
+											RECOMMENDED
+										</span>
+									{:else if isInOptimal && !isRecommended}
+										<span
+											class="rounded bg-orange-200 px-2 py-1 text-xs font-medium text-orange-800"
+										>
+											OPTIMAL RANGE
+										</span>
+									{/if}
+									{#if isSelected}
+										<span class="text-lg text-blue-600">✓</span>
+									{/if}
 								</div>
+
+								<div class="mt-2 grid grid-cols-3 gap-2 text-sm">
+									<div>
+										<span class="font-medium text-gray-700">Spine:</span>
+										<div class="text-lg font-bold text-blue-600">{shaft.spine}</div>
+									</div>
+									<div>
+										<span class="font-medium text-gray-700">Weight:</span>
+										<div class="text-gray-900">{shaft.weight} gr/in</div>
+									</div>
+									<div>
+										<span class="font-medium text-gray-700">Diameter:</span>
+										<div class="text-gray-900">{shaft.diameter}mm</div>
+									</div>
+								</div>
+
+								{#if manufacturerMatch}
+									<div class="mt-2 rounded bg-white p-2 text-xs">
+										<div class="font-medium text-green-700">
+											{manufacturerMatch.manufacturer}
+											{manufacturerMatch.series}
+										</div>
+										<div class="text-gray-600">
+											Recommended: {manufacturerMatch.recommendedSpine} spine
+											<span
+												class="ml-1 rounded px-1 text-xs {manufacturerMatch.confidence === 'high'
+													? 'bg-green-100 text-green-700'
+													: manufacturerMatch.confidence === 'medium'
+														? 'bg-yellow-100 text-yellow-700'
+														: 'bg-gray-100 text-gray-700'}"
+											>
+												{manufacturerMatch.confidence}
+											</span>
+										</div>
+									</div>
+								{/if}
 							</div>
-							{#if config.spineValue === shaft.spine && config.shaftWeight === shaft.weight}
-								<span class="text-xl text-blue-600">✓</span>
-							{/if}
 						</div>
 					</div>
 				{/each}
 			</div>
+
+			{#if filteredShafts.length === 0}
+				<div class="py-8 text-center text-gray-500">
+					<p>No shafts match your current criteria.</p>
+					<p class="text-sm">Try adjusting your material selection or manufacturer filter.</p>
+				</div>
+			{/if}
 		</div>
 	{/if}
 

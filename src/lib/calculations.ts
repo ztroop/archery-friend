@@ -1,5 +1,5 @@
 import type { ArrowConfiguration, SpineRecommendation, SafetyCheck, ArrowMaterial } from './types';
-import { spineConstants } from './data';
+import { spineConstants, manufacturerSpineRecommendations, pointWeightAdjustments } from './data';
 
 /**
  * Calculate recommended arrow length based on draw length and overhang
@@ -62,6 +62,139 @@ export function calculateSpineRecommendation(
 		material,
 		notes
 	};
+}
+
+/**
+ * Get manufacturer-specific spine recommendations
+ */
+export function getManufacturerSpineRecommendations(
+	drawWeight: number,
+	pointWeight: number,
+	arrowLength: number = 28
+): Array<{
+	manufacturer: string;
+	series: string;
+	recommendedSpine: number;
+	confidence: 'high' | 'medium' | 'low';
+	notes: string[];
+}> {
+	const recommendations: Array<{
+		manufacturer: string;
+		series: string;
+		recommendedSpine: number;
+		confidence: 'high' | 'medium' | 'low';
+		notes: string[];
+	}> = [];
+
+	// Check Black Eagle recommendations
+	Object.entries(manufacturerSpineRecommendations.blackEagle).forEach(([series, spineData]) => {
+		const match = spineData.find(
+			(data) =>
+				drawWeight >= data.drawWeight[0] &&
+				drawWeight <= data.drawWeight[1] &&
+				pointWeight >= data.pointWeight[0] &&
+				pointWeight <= data.pointWeight[1]
+		);
+
+		if (match) {
+			const notes: string[] = [];
+			let confidence: 'high' | 'medium' | 'low' = 'high';
+
+			// Apply arrow length adjustments
+			let adjustedSpine = match.recommendedSpine;
+			if (arrowLength !== 28) {
+				const lengthAdjustment =
+					pointWeightAdjustments.adjustmentFactors.arrowLength[
+						arrowLength as keyof typeof pointWeightAdjustments.adjustmentFactors.arrowLength
+					];
+				if (lengthAdjustment !== undefined) {
+					adjustedSpine = Math.round(match.recommendedSpine * (1 + lengthAdjustment));
+					notes.push(`Adjusted for ${arrowLength}" arrow length`);
+					confidence = 'medium';
+				}
+			}
+
+			// Apply point weight adjustments
+			if (pointWeight !== 100) {
+				const pointAdjustment =
+					pointWeightAdjustments.adjustmentFactors.pointWeight[
+						pointWeight as keyof typeof pointWeightAdjustments.adjustmentFactors.pointWeight
+					];
+				if (pointAdjustment !== undefined) {
+					adjustedSpine = Math.round(adjustedSpine * (1 + pointAdjustment));
+					notes.push(`Adjusted for ${pointWeight}gr point weight`);
+					if (confidence === 'high') confidence = 'medium';
+				}
+			}
+
+			recommendations.push({
+				manufacturer: 'Black Eagle',
+				series: series.charAt(0).toUpperCase() + series.slice(1),
+				recommendedSpine: adjustedSpine,
+				confidence,
+				notes
+			});
+		}
+	});
+
+	// Check Easton recommendations
+	Object.entries(manufacturerSpineRecommendations.easton).forEach(([series, spineData]) => {
+		const match = spineData.find(
+			(data) =>
+				drawWeight >= data.drawWeight[0] &&
+				drawWeight <= data.drawWeight[1] &&
+				pointWeight >= data.pointWeight[0] &&
+				pointWeight <= data.pointWeight[1]
+		);
+
+		if (match) {
+			const notes: string[] = [];
+			let confidence: 'high' | 'medium' | 'low' = 'high';
+
+			// Apply arrow length adjustments
+			let adjustedSpine = match.recommendedSpine;
+			if (arrowLength !== 28) {
+				const lengthAdjustment =
+					pointWeightAdjustments.adjustmentFactors.arrowLength[
+						arrowLength as keyof typeof pointWeightAdjustments.adjustmentFactors.arrowLength
+					];
+				if (lengthAdjustment !== undefined) {
+					adjustedSpine = Math.round(match.recommendedSpine * (1 + lengthAdjustment));
+					notes.push(`Adjusted for ${arrowLength}" arrow length`);
+					confidence = 'medium';
+				}
+			}
+
+			// Apply point weight adjustments
+			if (pointWeight !== 100) {
+				const pointAdjustment =
+					pointWeightAdjustments.adjustmentFactors.pointWeight[
+						pointWeight as keyof typeof pointWeightAdjustments.adjustmentFactors.pointWeight
+					];
+				if (pointAdjustment !== undefined) {
+					adjustedSpine = Math.round(adjustedSpine * (1 + pointAdjustment));
+					notes.push(`Adjusted for ${pointWeight}gr point weight`);
+					if (confidence === 'high') confidence = 'medium';
+				}
+			}
+
+			let seriesName = series;
+			if (series === 'fmj4mm') seriesName = 'FMJ 4mm';
+			else if (series === 'axisTraditional') seriesName = 'Axis Traditional';
+			else if (series === 'matchGrade') seriesName = '6.5mm Match Grade';
+			else seriesName = series.charAt(0).toUpperCase() + series.slice(1);
+
+			recommendations.push({
+				manufacturer: 'Easton',
+				series: seriesName,
+				recommendedSpine: adjustedSpine,
+				confidence,
+				notes
+			});
+		}
+	});
+
+	return recommendations.sort((a, b) => a.recommendedSpine - b.recommendedSpine);
 }
 
 /**
