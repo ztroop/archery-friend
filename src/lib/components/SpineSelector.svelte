@@ -53,6 +53,11 @@
 		config.shaftName = shaft.name;
 	}
 
+	function clearShaftSelection() {
+		config.shaftName = undefined;
+		// Keep the spine value and weight - user might want to keep their custom values
+	}
+
 	function isManufacturerRecommended(shaft: (typeof shaftDatabase)[0]): boolean {
 		return manufacturerRecommendations.some(
 			(rec) =>
@@ -264,8 +269,10 @@
 		<div class="rounded-lg border bg-white p-6">
 			<div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<h3 class="text-lg font-medium text-gray-700">🏹 Available Arrow Shafts</h3>
-					<p class="text-sm text-gray-500">Click any shaft to select it for your configuration</p>
+					<h3 class="text-lg font-medium text-gray-700">🏹 Available Arrow Shafts (Optional)</h3>
+					<p class="text-sm text-gray-500">
+						Click any shaft to auto-fill your configuration, or skip and use custom entry below
+					</p>
 				</div>
 				<div class="flex flex-col gap-2 sm:flex-row sm:items-center">
 					<div class="flex items-center gap-2">
@@ -436,6 +443,10 @@
 	<!-- Custom Spine Entry -->
 	<div class="rounded-lg bg-orange-50 p-6">
 		<h3 class="mb-4 text-lg font-medium text-gray-700">🔧 Custom Spine Entry</h3>
+		<p class="mb-4 text-sm text-gray-600">
+			Enter your arrow specifications directly if you prefer not to select from the manufacturer
+			database above, or if your specific arrow isn't listed.
+		</p>
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 			<div>
 				<label for="customSpine" class="mb-2 block font-medium text-gray-700"> Spine Value </label>
@@ -449,6 +460,7 @@
 					class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-500"
 					placeholder="400"
 				/>
+				<p class="mt-1 text-xs text-gray-500">Lower numbers = stiffer arrows</p>
 			</div>
 			<div>
 				<label for="customWeight" class="mb-2 block font-medium text-gray-700">
@@ -464,7 +476,34 @@
 					class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-500"
 					placeholder="8.5"
 				/>
+				<p class="mt-1 text-xs text-gray-500">Check arrow manufacturer specs</p>
 			</div>
+		</div>
+		<div class="mt-4">
+			<div class="flex items-center justify-between">
+				<label for="customShaftName" class="mb-2 block font-medium text-gray-700">
+					Arrow Name (Optional)
+				</label>
+				{#if config.shaftName}
+					<button
+						type="button"
+						on:click={clearShaftSelection}
+						class="mb-2 rounded bg-gray-200 px-2 py-1 text-xs text-gray-700 hover:bg-gray-300"
+					>
+						Clear Selection
+					</button>
+				{/if}
+			</div>
+			<input
+				id="customShaftName"
+				type="text"
+				bind:value={config.shaftName}
+				class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-500"
+				placeholder="e.g., Easton Axis 340, Black Eagle Rampage, or leave blank"
+			/>
+			<p class="mt-1 text-xs text-gray-500">
+				Optional: Helps with safety validation for known manufacturer shafts
+			</p>
 		</div>
 	</div>
 

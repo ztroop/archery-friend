@@ -24,16 +24,25 @@ export function calculateSpineRecommendation(
 ): SpineRecommendation {
 	const constants = spineConstants[material];
 
-	// Base spine calculation using industry standard formula
-	// Adjusted for point weight and draw length variations
-	let baseSpine = drawWeight * 0.9 + (drawLength - 28) * 10;
+	// Base spine calculation using empirical data from industry standards
+	// Start with draw weight correlation: 50lbs @ 28" = ~500 spine with 100gr points
+	let baseSpine = 1200 - drawWeight * 14;
+
+	// Draw length adjustment (longer arrows are more flexible, need stiffer spine)
+	// Each inch over 28" requires approximately 50 spine units stiffer (lower number)
+	const lengthAdjustment = (drawLength - 28) * -50;
+	baseSpine += lengthAdjustment;
 
 	// Point weight adjustment (heavier points weaken dynamic spine)
-	const pointAdjustment = (pointWeight - 125) * constants.weightFactor;
+	// Each 25gr over 100gr requires approximately 25 spine units stiffer
+	const pointAdjustment = ((pointWeight - 100) / 25) * -25;
 	baseSpine += pointAdjustment;
 
-	// Material modifier
+	// Material modifier - different materials have different stiffness characteristics
 	baseSpine *= constants.baseModifier;
+
+	// Ensure baseSpine is within reasonable bounds
+	baseSpine = Math.max(150, Math.min(950, baseSpine));
 
 	// Round to nearest common spine value
 	const commonSpines = [200, 250, 300, 340, 350, 400, 500, 600, 700, 800, 900];
